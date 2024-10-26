@@ -47,8 +47,18 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # Set seed for consistent language detection
 DetectorFactory.seed = 0
 
+INPUT_FILE_PATHS  = [
+    'csv/0-100.csv',
+    'csv/101-200.csv',
+    'csv/201-300.csv',
+    'csv/301-400.csv',
+    'csv/401-500.csv'
+]
+OUTPUT_FILE_PATH_CSV = 'output/data/01_Clean_Data.csv'
+OUTPUT_FILE_PATH_PKL = 'output/data/01_Clean_Data.pkl'
 
-def combine_csv_files(file_paths: List[str], type_of_run: str) -> pd.DataFrame:
+
+def combine_csv_files(file_paths: List[str], num_of_records : int) -> pd.DataFrame:
     try:
         # Create an empty list to store individual DataFrames
         dfs = []
@@ -63,25 +73,16 @@ def combine_csv_files(file_paths: List[str], type_of_run: str) -> pd.DataFrame:
         combined_df = pd.concat(dfs, ignore_index=True)
         logging.info(f"Successfully combined {len(file_paths)} files with total {len(combined_df)} records")
         
-        if type_of_run == 'test':
-            return combined_df.head(10)
-        else:
-            return combined_df
+        if num_of_records > len(combined_df):
+            num_of_records = len(combined_df)
+            
+        return combined_df.head(num_of_records)
         
     except Exception as e:
         logging.error(f"Error combining files: {e}")
         raise
 
 def read_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Clean the combined transcript data.
-    
-    Args:
-        df (pd.DataFrame): Combined DataFrame from multiple CSV files
-    
-    Returns:
-        pd.DataFrame: Cleaned DataFrame
-    """
     try:
         # Rename columns to match the expected format
         df = df.rename(columns={
@@ -91,12 +92,16 @@ def read_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
             'transcript': 'transcript'
         })
         
+        # Extract comedian name from the first two words of the title
+        
         # Drop the web-scraper-order column
         df = df.drop('web-scraper-order', axis=1, errors='ignore')
         
         # Clean data
         df = df.dropna(subset=['transcript'])  # Remove rows with no transcript
         df = df.drop_duplicates(subset=['title', 'transcript'])  # Remove duplicates
+        df['comedian'] = df['title'].apply(lambda x: ' '.join(x.split()[:2]))
+        
         
         logging.info(f"Successfully cleaned data, remaining records: {len(df)}")
         return df
@@ -106,15 +111,6 @@ def read_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
         raise
 
 def detect_language(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Detect language of transcripts and add as a new column.
-    
-    Args:
-        df (pd.DataFrame): Input DataFrame with transcripts
-    
-    Returns:
-        pd.DataFrame: DataFrame with language column added
-    """
     try:
         def safe_detect(text: str) -> str:
             try:
@@ -135,19 +131,10 @@ def detect_language(df: pd.DataFrame) -> pd.DataFrame:
         logging.error(f"Error in language detection: {e}")
         raise
     
-def get_imdb_info(df: pd.DataFrame, type_of_run : str, cache_file: str = 'output/data/00_Clean_Data.csv') -> pd.DataFrame:
-    """
-    Fetch IMDB information (runtime and rating) for each title.
-    
-    Args:
-        df (pd.DataFrame): Input DataFrame with titles
-    
-    Returns:
-        pd.DataFrame: DataFrame with runtime and rating columns added
-    """
-    if os.path.exists(cache_file):
-        logging.info(f"Loading cached data from: {cache_file}")
-        return pd.read_csv(cache_file)
+def get_imdb_info(df: pd.DataFrame, use_cache : str) -> pd.DataFrame:
+    if use_cache == 'true':
+        logging.info(f"Loading cached data from: {OUTPUT_FILE_PATH_CSV}")
+        return pd.read_csv(OUTPUT_FILE_PATH_CSV)
     
     
     ia = Cinemagoer()  # Updated to use Cinemagoer instead of IMDb
@@ -192,8 +179,6 @@ def get_imdb_info(df: pd.DataFrame, type_of_run : str, cache_file: str = 'output
 
 def create_rating_features(df: pd.DataFrame) -> pd.DataFrame:
     
-        """Create rating type feature and visualization"""
-        
         df['rating_type'] = df.rating.apply(lambda x: 1 if x >= df.rating.mean() else 0)
         
         plt.figure(figsize=(10, 6))
@@ -209,13 +194,7 @@ def create_rating_features(df: pd.DataFrame) -> pd.DataFrame:
         
         return df
 
-def analyze_runtime_and_ratings(df: pd.DataFrame):
-    
-    """
-    Create runtime and rating visualizations
-    kde stands for Kernel Density Estimate, a method used to visualize the distribution of data by estimating its probability density function. 
-    In the script, it's part of the seaborn library (sns.kdeplot) for creating smooth, continuous plots to show data distributions
-    """
+def plot_runtime_and_ratings(df: pd.DataFrame):
     
     # Runtime analysis
     valid_runtime = df[df.runtime > 0].runtime.astype(int)
@@ -241,7 +220,6 @@ def analyze_runtime_and_ratings(df: pd.DataFrame):
     logging.info(f'Rating SD: {valid_rating.std():.2f}')
 
 def process_text(df: pd.DataFrame) -> pd.DataFrame:
-    """Process text data and create word-related features"""
     
     stop_words = stopwords.words('english')
     stop_words.extend(['audience', 'laughter', 'laughing', 'announcer', 'narrator', 'cos'])
@@ -273,8 +251,7 @@ def process_text(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def create_word_visualizations(df: pd.DataFrame):
-    """Create word-related visualizations"""
+def plot_word_visualizations(df: pd.DataFrame):
     # F-words distribution
     plt.figure(figsize=(10, 6))
     ax = sns.kdeplot(df.f_words, fill=True, color="r")
@@ -303,10 +280,8 @@ def create_word_visualizations(df: pd.DataFrame):
     plt.savefig('output/01/07_Diversity_Ratio.png')
     plt.close()
     
-def create_wordclouds(df: pd.DataFrame):
+def plot_wordclouds(df: pd.DataFrame):
     logging.info("Creating word clouds...")
-    
-    """Create and save word clouds"""
     
     wordcloud = WordCloud(
         background_color="white", 
@@ -331,33 +306,26 @@ def create_wordclouds(df: pd.DataFrame):
     wordcloud.to_file('output/01/08_Wordcloud_All.png')
     logging.info("Word cloud saved for all words")
     
-def process_transcript_data(file_paths: List[str] , type_of_run : str) -> pd.DataFrame:
-    """
-    Main function to process transcript data from multiple files.
-    
-    Args:
-        file_paths (List[str]): List of paths to CSV files
-    
-    Returns:
-        pd.DataFrame: Processed DataFrame with all additional information
-    """
+def process_transcript_data(file_paths: List[str]) -> pd.DataFrame:
     try:
         # Combine and process data
-        combined_df = combine_csv_files(file_paths,type_of_run)
+        combined_df = combine_csv_files(file_paths,500)
         df = read_and_clean_data(combined_df)
         df = detect_language(df)
-        df = get_imdb_info(df,type_of_run=type_of_run)
+        df = get_imdb_info(df, 'false')
         
-        # Create features and visualizations
+        # Create features
         df = create_rating_features(df)
-        analyze_runtime_and_ratings(df)
         df = process_text(df)
-        create_word_visualizations(df)
-        create_wordclouds(df)
+        
+        # plot visualizations
+        plot_runtime_and_ratings(df)
+        plot_word_visualizations(df)
+        plot_wordclouds(df)
         
         # Save processed data
         os.makedirs('output/data', exist_ok=True)
-        df.to_pickle('output/data/00_Clean_Data.pkl')
+        df.to_pickle(OUTPUT_FILE_PATH_PKL)
         logging.info("Analysis completed successfully")
         return df
         
@@ -366,18 +334,10 @@ def process_transcript_data(file_paths: List[str] , type_of_run : str) -> pd.Dat
         raise
     
 if __name__ == "__main__":
-    file_paths = [
-        'csv/0-100.csv',
-        'csv/101-200.csv',
-        'csv/201-300.csv',
-        'csv/301-400.csv',
-        'csv/401-500.csv'
-    ]
-    type_of_run = 'FINAL'
-    logging.warning("TYPE_OF_RUN : " + type_of_run);
-    processed_df = process_transcript_data(file_paths, type_of_run)
+    
+    processed_df = process_transcript_data(INPUT_FILE_PATHS)
     logging.info("\nFirst few rows of processed data:")
     logging.info(processed_df.head())
     
     # Save processed data
-    processed_df.to_csv('output/data/00_Clean_Data.csv', index=False)
+    processed_df.to_csv(OUTPUT_FILE_PATH_CSV, index=False)

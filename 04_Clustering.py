@@ -15,12 +15,12 @@ INPUT_DATA_CSV = 'output/data/03_Data_LDA.csv'
 INPUT_DATA_PKL = 'output/data/03_Data_LDA.pkl'
 
 topics= [
-        "Music",
-        "Spanish",
+        "Racial Stereotypes",
+        "Spanish or Mexican Culture",
         "British_Slang",
-        "Politics",
-        "Environment",
-        "Latin",
+        "Family Relationships",
+        "Romantic Relationships",
+        "Melennials/Pandemic",
         "General"
     ]
 
@@ -128,7 +128,7 @@ def tfidf_vectorization():
                             max_df=0.4)
 
     lemmatized_words = []
-    with open('output/data/03_Lemmatized_Words.pkl', 'rb') as f:
+    with open('output/data/03_Lemmatized_Words_New.pkl', 'rb') as f:
         lemmatized_words = pickle.load(f)
         
     X_tfidf = tfidf.fit_transform(lemmatized_words)
@@ -195,29 +195,32 @@ def clustering_with_tfidf(df,X_tfidf,n_clusters):
 
 if __name__ == '__main__':
     
-    #* load data and plot topics
+    # #* load data and plot topics
     df = load_data()
-    topic_visualization(df)
+    # topic_visualization(df)
     
-    #* try clustering with different number of clusters
-    X = data_prep_for_clustering(df)
-    temp_dict, inertias = clustering_with_diff_n(df,X)
-    plot_silhouette_and_inertia(temp_dict,inertias)
+    # #* try clustering with different number of clusters
+    # X = data_prep_for_clustering(df)
+    # temp_dict, inertias = clustering_with_diff_n(df,X)
+    # plot_silhouette_and_inertia(temp_dict,inertias)
     
-    #* Clustering with X clusters
-    #* X is based on our observation from the Silhouette and Inertia plots
-    df = clustering(df,X,7)
+    # # #* Clustering with X clusters
+    # # #* X is based on our observation from the Silhouette and Inertia plots
+    # df = clustering(df,X,7)
     
     
-    #* TF-IDF Vectorization and clustering
+    # # #* TF-IDF Vectorization and clustering
     X_tfidf = tfidf_vectorization()
     temp_dict_tfidf, inertia_tfidf = clustering_using_tfidf_with_diff_n(X_tfidf)
-    plot_silhouette_and_inertia_tfidf(temp_dict_tfidf,inertia_tfidf)
+    # plot_silhouette_and_inertia_tfidf(temp_dict_tfidf,inertia_tfidf)
 
-    #* Clustering with TF-IDF
+    # #* Clustering with TF-IDF
     df = clustering_with_tfidf(df,X_tfidf,7)
     
-    #* Save the data
+    # #* Save the data
+    df = df.iloc[:, 1:].reset_index(drop=True)
+    
     df.to_pickle('output/data/04_Data_TFIDF.pkl')
     df.to_csv('output/data/04_Data_TFIDF.csv')
+    
     

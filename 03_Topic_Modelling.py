@@ -1,3 +1,19 @@
+import pyLDAvis.gensim
+import pyLDAvis
+from matplotlib import font_manager
+from nltk.corpus import stopwords
+from gensim.utils import simple_preprocess
+from gensim.models import Phrases
+from gensim.models.phrases import Phraser
+from gensim.corpora import Dictionary
+import numpy as np
+from gensim.models import LdaMulticore
+import spacy
+from tqdm import tqdm
+import pickle
+import matplotlib.pyplot as plt
+from gensim.models import CoherenceModel
+import re
 from utils.logging_config import configure_logging
 logger = configure_logging();
 
@@ -47,8 +63,7 @@ def accept_english_only(df):
 # en    491
 # Name: count, dtype: int64
 
-from nltk.corpus import stopwords
-from gensim.utils import simple_preprocess
+
 stop_words = stopwords.words('english')
 additional_stop_words = [
     'get', 'know', 'say', 'go', 'thing', 'come', 'right', 'really', 'think', 
@@ -110,10 +125,6 @@ def clean_tokens(df):
     logger.info(f"Contains stop word: {contains_stop_word}")
     return df
 
-
-
-from gensim.models import Phrases
-from gensim.models.phrases import Phraser
 def get_bigrams_and_trigrams(df):
     # Get bigrams and trigrams
     logger.info('Getting bigrams and trigrams')
@@ -133,16 +144,11 @@ def get_bigrams_and_trigrams(df):
     
     return trigrams
 
-
-import spacy
-from tqdm import tqdm
-import pickle
-
 def lemmatize_text(trigrams):
     # Lematize text
     logger.info('Lematizing text')
     nlp = spacy.load('en_core_web_sm', disable=['parser', 'ner'])
-    allowed_postags=['NOUN','ADJ','VERB','ADV']
+    allowed_postags=['NOUN','ADJ']
     lemmatized_words = []
     
     
@@ -156,7 +162,7 @@ def lemmatize_text(trigrams):
         lemmatized_words.append(lemmatized_sentence)
         
     # print(lemmatized_words[:5]);
-    with open('output/data/03_Lemmatized_Words.pkl', 'wb') as f:
+    with open('output/data/03_Lemmatized_Words_New.pkl', 'wb') as f:
         pickle.dump(lemmatized_words, f)
     
     stop_words_set = set(stop_words)
@@ -165,13 +171,11 @@ def lemmatize_text(trigrams):
     
     return lemmatized_words
     
-
-from gensim.corpora import Dictionary
 def create_corpus():
     # Create corpus
     logger.info('Creating corpus')
     lemmatized_words = []
-    with open('output/data/03_Lemmatized_Words.pkl', 'rb') as f:
+    with open('output/data/03_Lemmatized_Words_New.pkl', 'rb') as f:
         lemmatized_words = pickle.load(f)
    
     
@@ -182,18 +186,14 @@ def create_corpus():
     # print("Sample Corpus:", corpus[:5])
     return corpus, id2word
 
-
-
-
-import numpy as np
-from gensim.models import LdaMulticore
-
 def train_lda_model(corpus, id2word):
     # Train LDA model
-    num_of_topics = 7
     alpha = float(input("Enter the value for alpha: "))
     eta = float(input("Enter the value for eta: "))
     passes = int(input("Enter the value for passes: "))
+    num_of_topics = int(input("Enter the number of topics: "))
+    logger.info('Training LDA model')
+    
     lda_model = LdaMulticore(corpus=corpus,
                              id2word=id2word,
                              num_topics=num_of_topics,
@@ -205,46 +205,19 @@ def train_lda_model(corpus, id2word):
                              eval_every=1,
                              per_word_topics=True,
                              workers=1)
-    lda_model.print_topics(7,num_words=15);
+    lda_model.print_topics(num_topics=num_of_topics,num_words=15);
     return lda_model
 
-# topic #0 (0.350): 0.005*"drummer" + 0.004*"bridget" + 0.003*"drum" + 0.003*"cymbal" + 0.002*"titties_put_em_air" + 0.002*"drum_line" + 0.002*"kit" + 0.001*"gotta_gotta_dick_mouth" + 0.001*"guitar_line" + 0.001*"blue_moon_blue_moon" + 0.001*"ravi" + 0.001*"snare" + 0.001*"pedal" + 0.001*"tom_brady" + 0.001*"copeland"
-# topic #1 (0.350): 0.001*"era" + 0.001*"por" + 0.001*"eso" + 0.001*"que" + 0.001*"dije" + 0.001*"pero" + 0.001*"hacer" + 0.000*"porque" + 0.000*"aqui" + 0.000*"ere" + 0.000*"mal" + 0.000*"todo" + 0.000*"este" + 0.000*"nunca" + 0.000*"tiene"
-# topic #2 (0.350): 0.008*"bit" + 0.008*"mate" + 0.006*"quite" + 0.006*"bloke" + 0.005*"sort" + 0.003*"telly" + 0.003*"favourite" + 0.003*"lovely" + 0.002*"mime" + 0.002*"brilliant" + 0.002*"wank" + 0.002*"realise" + 0.002*"arse" + 0.002*"mum" + 0.002*"quid"
-# topic #3 (0.350): 0.000*"sade" + 0.000*"zionism" + 0.000*"hanky" + 0.000*"markle" + 0.000*"black_wedding" + 0.000*"saaave" + 0.000*"god_save_queen" + 0.000*"intoxicant" + 0.000*"cellist" + 0.000*"ceasefire" + 0.000*"missippi" + 0.000*"electroshock" + 0.000*"liberation" + 0.000*"gulman" + 0.000*"royal_wedding"
-# topic #4 (0.350): 0.001*"bolsonaro" + 0.001*"rainforest" + 0.001*"deforestation" + 0.001*"indigenous" + 0.000*"amazon" + 0.000*"jbs" + 0.000*"jair_bolsonaro" + 0.000*"batista" + 0.000*"dr_walsh" + 0.000*"ymca_pool" + 0.000*"sugar_frie" + 0.000*"meme" + 0.000*"sonia_guajajara" + 0.000*"agribusiness" + 0.000*"corruption"
-# topic #5 (0.350): 0.001*"corte" + 0.000*"expletive" + 0.000*"sarah_cooper" + 0.000*"mrpillow" + 0.000*"conquistador" + 0.000*"qanon" + 0.000*"scooter" + 0.000*"lindsey" + 0.000*"tainos" + 0.000*"inca" + 0.000*"beaner" + 0.000*"sarah_silverman" + 0.000*"latin" + 0.000*"coronavirus" + 0.000*"headmaster"
-# topic #6 (0.350): 0.008*"guy" + 0.007*"cause" + 0.006*"good" + 0.006*"time" + 0.006*"woman" + 0.005*"mean" + 0.005*"tell" + 0.005*"way" + 0.005*"little" + 0.005*"give" + 0.004*"let" + 0.004*"talk" + 0.004*"kid" + 0.004*"put" + 0.004*"call"
-    
-#! TOPIC 0 : Drummer, Bridget, Drum, Cymbal, Titties, Drum Line, Kit, Gotta, Guitar Line, Blue Moon, Ravi, Snare, Pedal, Tom Brady, Copeland
-#! TOPIC 1 : Era, Por, Eso, Que, Dije, Pero, Hacer, Porque, Aqui, Ere, Mal, Todo, Este, Nunca, Tiene
-#! TOPIC 2 : Bit, Mate, Quite, Bloke, Sort, Telly, Favourite, Lovely, Mime, Brilliant
-#! TOPIC 3 : Sade, Zionism, Hanky, Markle, Black Wedding, Saaave, God Save Queen, Intoxicant, Cellist, Ceasefire
-#! TOPIC 4 : Bolsonaro, Rainforest, Deforestation, Indigenous, Amazon, Jbs, Jair Bolsonaro, Batista, Dr Walsh, Ymca Pool
-#! TOPIC 5 : Corte, Expletive, Sarah Cooper, Mrpillow, Conquistador, Qanon, Scooter, Lindsey, Tainos, Inca
-#! TOPIC 6 : Guy, Cause, Good, Time, Mean, Tell, Way, Little, Give, Let, Talk, Kid, Put, Call
-
-#* TOPIC 1 NAME : MUSIC
-#* TOPIC 2 NAME : SPANISH
-#* TOPIC 3 NAME : BRITISH
-#* TOPIC 4 NAME : SOCIAL
-#* TOPIC 5 NAME : ENVIRONMENT
-#* TOPIC 6 NAME : LATIN
-#* TOPIC 7 NAME : GENERAL
-
-
-import os
 def save_lda_model(lda_model):
     # Save the trained LDA model
     lda_model.save('output/data/LDA/03_LDA_Model')
     logger.info('LDA model saved successfully')
     return
 
-from gensim.models import CoherenceModel
 def compute_coherence_score(id2word):
     # Compute coherence score
     lemmatized_words = []
-    with open('output/data/03_Lemmatized_Words.pkl', 'rb') as f:
+    with open('output/data/03_Lemmatized_Words_New.pkl', 'rb') as f:
         lemmatized_words = pickle.load(f)
     
     lda_model = LdaMulticore.load('output/data/LDA/03_LDA_Model')    
@@ -254,23 +227,6 @@ def compute_coherence_score(id2word):
     logger.info(f'Coherence Score: {coherence_lda}')
     return coherence_lda
 
-#! Coherence Score: 0.48868926693894194
-
-def assign_topic_names():
-# Mapping topics to names based on interpretation of their keywords
-    topic_names = {
-        0: "Music",
-        1: "Spanish",
-        2: "British_Slang",
-        3: "Politics",
-        4: "Environment",
-        5: "Latin",
-        6: "General"
-    }
-    return topic_names
-
-import matplotlib.pyplot as plt
-import re
 def save_topics_and_coherence_score(coherence_lda):
     coherence_score = coherence_lda
     lda_topics = LdaMulticore.load('output/data/LDA/03_LDA_Model').print_topics(7,num_words=15)
@@ -291,30 +247,24 @@ def save_topics_and_coherence_score(coherence_lda):
     for i, info in enumerate(topic_info):
         topic_name, keywords = info.split(": ")
         ax.text(0.1, 0.9 - i*0.07, f"{topic_name}", fontsize=10, ha='left', wrap=True, fontweight='bold')
-        ax.text(0.2, 0.9 - i*0.07, f"--> {keywords}", fontsize=10, ha='left', wrap=True,)
+        ax.text(0.25, 0.9 - i*0.07, f"--> {keywords}", fontsize=10, ha='left', wrap=True,)
     
     # Add coherence score at the bottom center
     ax.text(0.5, 0.1, f"Coherence Score: {coherence_score:.2f}", fontsize=12, ha='center', va='center', transform=ax.transAxes)    
     ax.axis('off') 
     plt.title("LDA Topics Visualization", fontsize=16)
     plt.tight_layout()
-    plt.savefig("output/03/03_Topics_With_Coherence-1.png", dpi=300)
+    plt.savefig("output/03/03_Topics_With_Coherence_New.png", dpi=300)
     plt.close(fig)
     
     logger.info('Coherence score saved successfully')
     return
     
-
-
-
-import pyLDAvis.gensim
-import pyLDAvis
-from matplotlib import font_manager
 def visualize_topics( corpus, id2word):
     # Visualize the topics using pyLDAvis
     lda_model = LdaMulticore.load('output/data/LDA/03_LDA_Model')
     LDAvis_prepared = pyLDAvis.gensim.prepare(lda_model, corpus, id2word)
-    pyLDAvis.save_html(LDAvis_prepared, 'output/03/03_LDA_Visualization-1.html')
+    pyLDAvis.save_html(LDAvis_prepared, 'output/03/03_LDA_Visualization_New.html')
     return LDAvis_prepared
 
 def calculate_topic_probabilities(corpus):
@@ -337,27 +287,40 @@ def add_topic_probabilities_to_df(topic_vecs):
     df = pd.concat([df, LDA_probs], axis=1)
     return df
 
+def assign_topic_names():
+# Mapping topics to names based on interpretation of their keywords
+    topic_names = {
+        0: "Racial Stereotypes",
+        1: "Spanish or Mexican Culture",
+        2: "British_Slang",
+        3: "Family Relationships",
+        4: "Romantic Relationships",
+        5: "Melennials/Pandemic",
+        6: "General"
+    }
+    return topic_names
+
 
 
 # main function
 if __name__ == '__main__':
     
-    df = load_data()
-    df = accept_english_only(df)
-    # save and returns new cleaned data
-    df_new = clean_tokens(df)
-    trigrams = get_bigrams_and_trigrams(df_new)
-    lemmatized_words = lemmatize_text(trigrams)
+    # df = load_data()
+    # df = accept_english_only(df)
+    # # save and returns new cleaned data
+    # df_new = clean_tokens(df)
+    # trigrams = get_bigrams_and_trigrams(df_new)
+    # lemmatized_words = lemmatize_text(trigrams)
     
-    #* fech saved lemmatized words and create corpus and lda model
+    # #* fech saved lemmatized words and create corpus and lda model
     corpus, id2word = create_corpus()
-    lda_model = train_lda_model(corpus, id2word)
-    save_lda_model(lda_model);
+    # lda_model = train_lda_model(corpus, id2word)
+    # save_lda_model(lda_model);
     
-    #* fetch lda_mdel and lemmtized words and find coherence score
-    coherence_lda = compute_coherence_score(id2word)
-    save_topics_and_coherence_score(coherence_lda)
-    visualize_topics(corpus,id2word)
+    # #* fetch lda_mdel and lemmtized words and find coherence score
+    # coherence_lda = compute_coherence_score(id2word)
+    # save_topics_and_coherence_score(coherence_lda)
+    # visualize_topics(corpus,id2word)
     
     topic_vecs = calculate_topic_probabilities(corpus)
     df = add_topic_probabilities_to_df(topic_vecs)

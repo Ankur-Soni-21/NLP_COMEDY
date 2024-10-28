@@ -193,12 +193,13 @@ def train_lda_model(corpus, id2word):
     num_of_topics = 7
     alpha = float(input("Enter the value for alpha: "))
     eta = float(input("Enter the value for eta: "))
+    passes = int(input("Enter the value for passes: "))
     lda_model = LdaMulticore(corpus=corpus,
                              id2word=id2word,
                              num_topics=num_of_topics,
                              random_state=1,
                              chunksize=30,
-                             passes=40,
+                             passes=passes,
                              eta=eta,
                              alpha=alpha,
                              eval_every=1,
@@ -235,7 +236,6 @@ def train_lda_model(corpus, id2word):
 import os
 def save_lda_model(lda_model):
     # Save the trained LDA model
-    os.mkdir('output/data/LDA')
     lda_model.save('output/data/LDA/03_LDA_Model')
     logger.info('LDA model saved successfully')
     return
@@ -298,7 +298,7 @@ def save_topics_and_coherence_score(coherence_lda):
     ax.axis('off') 
     plt.title("LDA Topics Visualization", fontsize=16)
     plt.tight_layout()
-    plt.savefig("output/03/03_Topics_With_Coherence.png", dpi=300)
+    plt.savefig("output/03/03_Topics_With_Coherence-1.png", dpi=300)
     plt.close(fig)
     
     logger.info('Coherence score saved successfully')
@@ -314,7 +314,7 @@ def visualize_topics( corpus, id2word):
     # Visualize the topics using pyLDAvis
     lda_model = LdaMulticore.load('output/data/LDA/03_LDA_Model')
     LDAvis_prepared = pyLDAvis.gensim.prepare(lda_model, corpus, id2word)
-    pyLDAvis.save_html(LDAvis_prepared, 'output/03/03_LDA_Visualization.html')
+    pyLDAvis.save_html(LDAvis_prepared, 'output/03/03_LDA_Visualization-1.html')
     return LDAvis_prepared
 
 def calculate_topic_probabilities(corpus):
@@ -342,22 +342,22 @@ def add_topic_probabilities_to_df(topic_vecs):
 # main function
 if __name__ == '__main__':
     
-    # df = load_data()
-    # df = accept_english_only(df)
+    df = load_data()
+    df = accept_english_only(df)
     # save and returns new cleaned data
-    # df_new = clean_tokens(df)
-    # trigrams = get_bigrams_and_trigrams(df_new)
-    # lemmatized_words = lemmatize_text(trigrams)
+    df_new = clean_tokens(df)
+    trigrams = get_bigrams_and_trigrams(df_new)
+    lemmatized_words = lemmatize_text(trigrams)
     
     #* fech saved lemmatized words and create corpus and lda model
     corpus, id2word = create_corpus()
-    # lda_model = train_lda_model(corpus, id2word)
-    # save_lda_model(lda_model);
+    lda_model = train_lda_model(corpus, id2word)
+    save_lda_model(lda_model);
     
     #* fetch lda_mdel and lemmtized words and find coherence score
-    # coherence_lda = compute_coherence_score(id2word)
-    # save_topics_and_coherence_score(coherence_lda)
-    # visualize_topics(corpus,id2word)
+    coherence_lda = compute_coherence_score(id2word)
+    save_topics_and_coherence_score(coherence_lda)
+    visualize_topics(corpus,id2word)
     
     topic_vecs = calculate_topic_probabilities(corpus)
     df = add_topic_probabilities_to_df(topic_vecs)

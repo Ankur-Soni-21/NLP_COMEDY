@@ -115,6 +115,10 @@ def plot_temporal_sentiment(df, polarity_transcript, plots_per_file=100):
     total_records = len(polarity_transcript)
     logger.info(f"Plotting temporal sentiment analysis for {total_records} records...")
     
+    # THIS FORMULA ENSURES THAT ANY REMAINDER IS ACCOUNTED FOR BY ROUNDING UP THE DIVISION
+    # 250 / 100 = 2.5 FILES
+    # (250 + 100 - 1) // 100 = 3 FILES 
+    #  "//" GIVES FLOOR DIVISION 
     num_files = (total_records + plots_per_file - 1) // plots_per_file
     
     for file_num in range(num_files):

@@ -34,6 +34,7 @@ def load_data():
 
 plt.rcParams['figure.dpi'] = 150 
 plt.rcParams['savefig.dpi'] = 300
+
 def topic_visualization(df):
 
     color_palette = sns.color_palette("muted", len(topics))
@@ -197,22 +198,22 @@ if __name__ == '__main__':
     
     # #* load data and plot topics
     df = load_data()
-    # topic_visualization(df)
+    topic_visualization(df)
     
     # #* try clustering with different number of clusters
-    # X = data_prep_for_clustering(df)
-    # temp_dict, inertias = clustering_with_diff_n(df,X)
-    # plot_silhouette_and_inertia(temp_dict,inertias)
+    X = data_prep_for_clustering(df)
+    temp_dict, inertias = clustering_with_diff_n(df,X)
+    plot_silhouette_and_inertia(temp_dict,inertias)
     
     # # #* Clustering with X clusters
     # # #* X is based on our observation from the Silhouette and Inertia plots
-    # df = clustering(df,X,7)
+    df = clustering(df,X,7)
     
     
     # # #* TF-IDF Vectorization and clustering
     X_tfidf = tfidf_vectorization()
     temp_dict_tfidf, inertia_tfidf = clustering_using_tfidf_with_diff_n(X_tfidf)
-    # plot_silhouette_and_inertia_tfidf(temp_dict_tfidf,inertia_tfidf)
+    plot_silhouette_and_inertia_tfidf(temp_dict_tfidf,inertia_tfidf)
 
     # #* Clustering with TF-IDF
     df = clustering_with_tfidf(df,X_tfidf,7)

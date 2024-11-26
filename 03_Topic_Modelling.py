@@ -127,6 +127,9 @@ def clean_tokens(df):
     logger.info(f"Contains stop word: {contains_stop_word}")
     return df
 
+# {1,2,3,4,5,6,7,8,9,10} -> {{1,2} , {3,4} , {5,6} , {7,8} , {9,10}}  => bigrams
+# {{1,2} , {3,4} , {5,6} , {7,8} , {9,10}} -> {{1,2,3} , {5,6,7} , {8,9,10}} => trigrams
+
 def get_bigrams_and_trigrams(df):
     # Get bigrams and trigrams
     logger.info('Getting bigrams and trigrams')
@@ -184,8 +187,8 @@ def create_corpus():
     id2word = Dictionary(lemmatized_words)
     corpus = [id2word.doc2bow(doc) for doc in lemmatized_words]
     
-    # print("Sample Dictionary:", list(id2word.items())[:10])  # Display a sample of the dictionary
-    # print("Sample Corpus:", corpus[:5])
+    print("Sample Dictionary:", list(id2word.items())[:10])  # Display a sample of the dictionary
+    print("Sample Corpus:", corpus[:5])
     return corpus, id2word
 
 def train_lda_model(corpus, id2word):
@@ -207,6 +210,7 @@ def train_lda_model(corpus, id2word):
                              eval_every=1,
                              per_word_topics=True,
                              workers=1)
+    
     lda_model.print_topics(num_topics=num_of_topics,num_words=15);
     return lda_model
 
@@ -243,8 +247,6 @@ def save_topics_and_coherence_score(coherence_lda):
         keyowrds = re.findall(r'\"(.*?)\"', topic[1])
         topic_name = topic_names.get(topic_num, f"Topic {topic_num}")
         topic_info.append(f"{topic_name}: [{', '.join(keyowrds)}]")
-    
-
     
     for i, info in enumerate(topic_info):
         topic_name, keywords = info.split(": ")
@@ -307,12 +309,12 @@ def assign_topic_names():
 # main function
 if __name__ == '__main__':
     
-    # df = load_data()
-    # df = accept_english_only(df)
-    # # save and returns new cleaned data
-    # df_new = clean_tokens(df)
-    # trigrams = get_bigrams_and_trigrams(df_new)
-    # lemmatized_words = lemmatize_text(trigrams)
+    df = load_data()
+    df = accept_english_only(df)
+    # save and returns new cleaned data
+    df_new = clean_tokens(df)
+    trigrams = get_bigrams_and_trigrams(df_new)
+    lemmatized_words = lemmatize_text(trigrams)
     
     # #* fech saved lemmatized words and create corpus and lda model
     corpus, id2word = create_corpus()
@@ -324,10 +326,10 @@ if __name__ == '__main__':
     # save_topics_and_coherence_score(coherence_lda)
     # visualize_topics(corpus,id2word)
     
-    topic_vecs = calculate_topic_probabilities(corpus)
-    df = add_topic_probabilities_to_df(topic_vecs)
-    df.to_csv("output/data/03_Data_LDA.csv",index="false")
-    df.to_pickle("output/data/03_Data_LDA.pkl");
-    print(df.head());
+    # topic_vecs = calculate_topic_probabilities(corpus)
+    # df = add_topic_probabilities_to_df(topic_vecs)
+    # df.to_csv("output/data/03_Data_LDA.csv",index="false")
+    # df.to_pickle("output/data/03_Data_LDA.pkl");
+    # print(df.head());
     
     

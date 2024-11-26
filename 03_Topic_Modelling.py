@@ -318,18 +318,18 @@ if __name__ == '__main__':
     
     # #* fech saved lemmatized words and create corpus and lda model
     corpus, id2word = create_corpus()
-    # lda_model = train_lda_model(corpus, id2word)
-    # save_lda_model(lda_model);
+    lda_model = train_lda_model(corpus, id2word)
+    save_lda_model(lda_model);
     
-    # #* fetch lda_mdel and lemmtized words and find coherence score
-    # coherence_lda = compute_coherence_score(id2word)
-    # save_topics_and_coherence_score(coherence_lda)
-    # visualize_topics(corpus,id2word)
+    #* fetch lda_mdel and lemmtized words and find coherence score
+    coherence_lda = compute_coherence_score(id2word)
+    save_topics_and_coherence_score(coherence_lda)
+    visualize_topics(corpus,id2word)
     
-    # topic_vecs = calculate_topic_probabilities(corpus)
-    # df = add_topic_probabilities_to_df(topic_vecs)
-    # df.to_csv("output/data/03_Data_LDA.csv",index="false")
-    # df.to_pickle("output/data/03_Data_LDA.pkl");
-    # print(df.head());
+    topic_vecs = calculate_topic_probabilities(corpus)
+    df = add_topic_probabilities_to_df(topic_vecs)
+    df.to_csv("output/data/03_Data_LDA.csv",index="false")
+    df.to_pickle("output/data/03_Data_LDA.pkl");
+    print(df.head());
     
     

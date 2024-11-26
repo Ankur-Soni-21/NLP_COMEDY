@@ -121,6 +121,8 @@ def clean_tokens(df):
     df.to_pickle('output/data/03_Clean_Data.pkl')
     
     stop_words_set = set(stop_words)
+    
+    
     contains_stop_word = any(word in stop_words_set for word in df['words'][0])
     logger.info(f"Contains stop word: {contains_stop_word}")
     return df

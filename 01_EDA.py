@@ -178,21 +178,19 @@ def get_imdb_info(df: pd.DataFrame, use_cache : str) -> pd.DataFrame:
     return df
 
 def create_rating_features(df: pd.DataFrame) -> pd.DataFrame:
+    # Plot the distribution of ratings using a histogram
+    plt.figure(figsize=(10, 6))
+    ax = sns.histplot(df['rating'], bins=20, kde=False)
+    ax.set(title='Distribution of IMDb Ratings', xlabel='Rating', ylabel='Frequency')
+    plt.savefig('output/01/01_Rating_Histogram.png')
+    plt.close()
     
-        df['rating_type'] = df.rating.apply(lambda x: 1 if x >= df.rating.mean() else 0)
-        
-        plt.figure(figsize=(10, 6))
-        ax = sns.countplot(x='rating_type', data=df)
-    
-        # Set ticks before setting tick labels
-        ax.set_xticks([0, 1])
-        ax.set_xticklabels(['Low rating (< mean)', 'High rating (> mean)'])
-        
-        ax.set(title='Counts of specials with higher or lower than average ratings')
-        plt.savefig('output//01/01_Rating_Distribution.png')
-        plt.close()
-        
-        return df
+    # Plot the distribution of ratings using a KDE plot
+    plt.figure(figsize=(10, 6))
+    ax = sns.kdeplot(df['rating'], fill=True, color="g")
+    ax.set(title='KDE of IMDb Ratings', xlabel='Rating')
+    plt.savefig('output/01/02_Rating_KDE.png')
+    plt.close()
 
 def plot_runtime_and_ratings(df: pd.DataFrame):
     
@@ -312,7 +310,7 @@ def process_transcript_data(file_paths: List[str]) -> pd.DataFrame:
         combined_df = combine_csv_files(file_paths,500)
         df = read_and_clean_data(combined_df)
         df = detect_language(df)
-        df = get_imdb_info(df, 'false')
+        df = get_imdb_info(df, 'true')
         
         # Create features
         df = create_rating_features(df)
@@ -336,6 +334,7 @@ def process_transcript_data(file_paths: List[str]) -> pd.DataFrame:
 if __name__ == "__main__":
     
     processed_df = process_transcript_data(INPUT_FILE_PATHS)
+    process_transcript_data(INPUT_FILE_PATHS)
     logging.info("\nFirst few rows of processed data:")
     logging.info(processed_df.head())
     
